@@ -1,6 +1,8 @@
 // Import read_line and flush
 use std::io::{self, Write};
 
+mod parser;
+
 fn main() {
     // loop defines an infinite loop a.k.a. while (true)
     loop {
@@ -21,7 +23,7 @@ fn main() {
             break;
         };
 
-        // Print the entered command
-        println!("You entered: {}", command);
+        // Print the parsed command
+        println!("You entered: {:?}", parser::parse(command.trim()));
     }
 }
