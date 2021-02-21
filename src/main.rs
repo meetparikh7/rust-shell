@@ -2,8 +2,10 @@
 use std::io::{self, Write};
 
 mod parser;
+mod executor;
 
 fn main() {
+    let mut task_manager = executor::TaskManager::new();
     // loop defines an infinite loop a.k.a. while (true)
     loop {
         // Create a mutable string
@@ -23,7 +25,9 @@ fn main() {
             break;
         };
 
-        // Print the parsed command
-        println!("You entered: {:?}", parser::parse(command.trim()));
+        match parser::parse(command.trim()) {
+            Some(parsed_command) => task_manager.execute(parsed_command),
+            None => println!("Invalid command")
+        }
     }
 }
