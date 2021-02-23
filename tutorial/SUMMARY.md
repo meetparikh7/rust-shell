@@ -4,3 +4,4 @@
 - [Command parsing](./chapter_2.md)
 - [Simple command execution](./chapter_3.md)
 - [Background jobs](./chapter_4.md)
+- [Signal handling](./chapter_5.md)

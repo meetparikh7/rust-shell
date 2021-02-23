@@ -1,5 +1,8 @@
+use signal_hook;
 use std::collections::HashMap;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 pub struct TaskManager {
     bg_jobs: HashMap<i64, Child>,
@@ -59,15 +62,40 @@ impl TaskManager {
                 self.bg_jobs.insert(self.cur_job, invoked_cmd);
                 println!("Started bg job {}", self.cur_job);
             } else {
-                // Wait for command to finish
-                invoked_cmd
-                    .wait_with_output()
-                    .expect(&format!("Failed to wait for {}", base_cmd));
+                self.run_process_in_fg(invoked_cmd);
             }
         } else {
             // Pass as empty command
         }
     }
+
+    // ANCHOR: run_process_in_fg
+    fn run_process_in_fg(&mut self, mut child_process: Child) {
+        let shall_stop_process = Arc::new(AtomicBool::new(false));
+        signal_hook::flag::register(
+            signal_hook::consts::SIGTSTP,
+            Arc::clone(&shall_stop_process),
+        )
+        .unwrap();
+
+        loop {
+            if shall_stop_process.load(Ordering::Relaxed) {
+                self.cur_job += 1;
+                self.bg_jobs.insert(self.cur_job, child_process);
+                println!("Now running as background job {}", self.cur_job);
+                break;
+            }
+            // Wait for command to finish
+            match child_process
+                .try_wait()
+                .expect(&format!("Failed to wait for current job"))
+            {
+                Some(_status) => break,
+                _ => (),
+            }
+        }
+    }
+    // ANCHOR_END: run_process_in_fg
 
     // ANCHOR: internal-fg
     fn fg(&mut self, args: &[String]) {
@@ -75,9 +103,7 @@ impl TaskManager {
         // Move the child_process out of the hashmap
         let child_process = self.bg_jobs.remove(&job).unwrap();
         // Wait for command to finish
-        child_process
-            .wait_with_output()
-            .expect(&format!("Failed to wait for background job {}", job));
+        self.run_process_in_fg(child_process);
     }
     // ANCHOR_END: internal-fg
 

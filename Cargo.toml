@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 shlex = "0.1.1"
+signal-hook = "0.3.6"
