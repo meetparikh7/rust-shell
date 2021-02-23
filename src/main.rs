@@ -1,8 +1,8 @@
 // Import read_line and flush
 use std::io::{self, Write};
 
-mod parser;
 mod executor;
+mod parser;
 
 fn main() {
     let mut task_manager = executor::TaskManager::new();
@@ -27,7 +27,7 @@ fn main() {
 
         match parser::parse(command.trim()) {
             Some(parsed_command) => task_manager.execute(parsed_command),
-            None => println!("Invalid command")
+            None => println!("Invalid command"),
         }
     }
 }
