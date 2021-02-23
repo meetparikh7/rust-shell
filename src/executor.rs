@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::env;
+use std::path::PathBuf;
 
 pub struct TaskManager {
     bg_jobs: HashMap<i64, Child>,
     cur_job: i64,
+    cur_dir: PathBuf
 }
 
 impl TaskManager {
@@ -15,6 +18,7 @@ impl TaskManager {
         TaskManager {
             bg_jobs: HashMap::new(),
             cur_job: 0,
+            cur_dir: env::current_dir().unwrap()
         }
     }
 
@@ -27,6 +31,8 @@ impl TaskManager {
                 return self.fg(args);
             } else if base_cmd == "jobs" {
                 return self.jobs(args);
+            } else if base_cmd == "cd" {
+                return self.cd(args);
             }
 
             // Create a new command
@@ -54,6 +60,7 @@ impl TaskManager {
             let invoked_cmd = cmd
                 .stdin(Stdio::inherit())
                 .stdout(Stdio::inherit())
+                .current_dir(self.cur_dir.as_path())
                 .spawn()
                 .expect(&format!("Failed to start {}", base_cmd));
 
@@ -127,4 +134,17 @@ impl TaskManager {
         }
     }
     // ANCHOR_END: internal-jobs
+
+    // ANCHOR: internal-cd
+    fn cd(&mut self, args: &[String]) {
+        let new_dir = std::path::Path::new(&args[0]);
+        let new_dir_pathbuf;
+        if new_dir.is_relative() {
+            new_dir_pathbuf = self.cur_dir.join(new_dir);
+        } else {
+            new_dir_pathbuf = new_dir.to_path_buf();
+        }
+        self.cur_dir = new_dir_pathbuf;
+    }
+    // ANCHOR_END: internal-cd
 }
